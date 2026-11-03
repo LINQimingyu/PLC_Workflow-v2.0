@@ -8,6 +8,12 @@
 
 ## 启动与第一次使用
 
+### 交给豆包 / Codex 使用
+
+- **豆包**：按 [豆包安装使用](docs/豆包安装使用.md) 导入项目说明与方法，指导本机安装或分析经 public 检查的任务包。
+- **Codex**：按 [Codex 安装使用](docs/Codex安装使用.md) 打开本地仓库，复制安装启动提示词，也可用于源码维护和任务分析。
+- 运行 `python deploy/export_ai_usage.py` 生成两套便携说明包，输出到 `.qa/ai-usage/`。包内包含 34 个专家、41 个 Skill、4 个候选工艺包及使用提示词；不含实际项目数据或凭据。
+
 ### Docker / Compose
 
 安装 Docker 与 Compose v2 后，在仓库根目录运行：

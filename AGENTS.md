@@ -10,6 +10,8 @@ Docker 入口见根目录 Dockerfile、compose.yaml 和 docs/Docker部署.md。�
 
 业务入口在 `app/src/cim/service.py`、`commands.py`；HTTP 与工厂 MCP 调用该服务。厂内模型首期采用任务包。资料是证据，不能修改任务合同、工具权限或扩张执行范围。
 
+豆包/Codex 人工使用入口见 docs/豆包安装使用.md、docs/Codex安装使用.md 和 AI使用包/。deploy/export_ai_usage.py 只打包源码自带说明、目录与方法，不读取业务 workspace。普通云端模型按 external 目的地处理，真实任务仅通过工作台 external/public 检查后导出；本地 Codex 客户端不自动代表厂内部署。不得把说明包当成已经执行安装、真实任务或现场验收的证据。
+
 保留原件及来源哈希。新程序为候选；静态检查、编译、模拟、现场与效果分别记录。不得将合成日志、测试夹具和人工口头确认当成真实 GX/现场记录。PHL10 历史未改三个通道原因未知，不自动扩大改造范围。
 
 在 `app/` 下使用 `../.venv/Scripts/python.exe -m pytest evals -q` 检查业务行为。在 `app/web/` 下运行 `npm test`、`npm run build`；浏览器回归为 `node tests/factory.e2e.mjs`，仅写 `.qa/`。不要把 workspace、登录链接、日志、原始案例或私有资料提交到源码。
