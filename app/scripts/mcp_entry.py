@@ -1,0 +1,34 @@
+# Copyright 2026 Arienax
+# Licensed under the Apache License, Version 2.0. See LICENSE for the license terms.
+
+"""Product launcher entry for GXWorks Agent MCP.
+
+This file makes source checkouts invokable without PYTHONPATH or knowledge of the
+internal module path.  Packagers may use the same entry for GXWorks-Agent-MCP.exe.
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from integrations.mcp.__main__ import main  # noqa: E402
+
+
+if __name__ == "__main__":
+    if sys.argv[1:] == ['--self-test-st']:
+        import json
+        from runtime_st_smoke import check_st_runtime
+        print(json.dumps(check_st_runtime()))
+        raise SystemExit(0)
+    if sys.argv[1:] == ['--self-test-pwm']:
+        import json
+        from runtime_pwm_smoke import check_pwm_runtime
+        print(json.dumps(check_pwm_runtime()))
+        raise SystemExit(0)
+    raise SystemExit(main())

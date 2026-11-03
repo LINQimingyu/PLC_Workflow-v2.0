@@ -1,0 +1,30 @@
+# Local environments and dependencies
+.venv/
+node_modules/
+# Private workspaces and original cases
+/workspace/
+/数据备份/
+/案例分析/
+/.github-publish/
+# Credentials and runtime files
+.env
+.env.*
+!.env.example
+.local/
+*.pem
+*.key
+*.pfx
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-shm
+*.sqlite-wal
+*.log
+# Caches and generated outputs
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.qa/
+.runtime/
+web/dist/
+*.tsbuildinfo
