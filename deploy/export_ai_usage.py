@@ -71,7 +71,7 @@ def build_pack(platform):
         "角色和方法不自动安装到聊天客户端；只按当前问题选择材料。\n"
         "若客户端不能读取 ZIP，先在自己的电脑解压，再按需粘贴 TXT/JSON/Markdown 文本。\n"
         "真实任务的 task.json、return-template.json 和来源必须另从工作台按 external/public 规则导出。\n"
-        "完整源码：https://github.com/LINQimingyu/PLC_Workflow-v2.0 （私有仓库，需要账号权限）\n"
+        "完整源码：https://github.com/LINQimingyu/PLC_Workflow-v2.0 （公开源码，Apache-2.0）\n"
     ).encode("utf-8")
     manifest = {
         "format_version": 1, "platform": platform, "classification": "public",

@@ -4,7 +4,7 @@
 
 ## 本地桌面项目
 
-1. 使用有仓库权限的 GitHub 账号克隆 `https://github.com/LINQimingyu/PLC_Workflow-v2.0.git`。已有副本先检查本地修改，再按需要更新。
+1. 直接克隆公开仓库 `https://github.com/LINQimingyu/PLC_Workflow-v2.0.git`。已有副本先检查本地修改，再按需要更新。
 2. 在 Codex 桌面端添加本地项目文件夹，选仓库根目录，而不是只选择 `app/`。应能看到 `AGENTS.md`、`README.md`、安装脚本和 Compose 配置。
 3. 新建该本地项目下的 Codex 对话，复制 [安装启动提示词](../AI使用包/Codex/安装启动提示词.md)。提示词文件不会自动执行，需由用户在对话中发起任务。
 4. Windows 直接运行需要 Python 3.13 和 Node.js 22.14 或更高版本。Codex 可按现有脚本安装、构建、启动，并核对 `http://127.0.0.1:8772/api/health`。无需额外模型 Key 才能安装；“AI 协助创建”的模型配置是之后的独立选择。
@@ -39,7 +39,7 @@ codex exec --sandbox read-only "读取 AGENTS.md 和 README.md，说明项目结
 
 ## Codex 云端环境
 
-有云端功能的账号可自行将私有仓库接入并创建环境。云端用于代码阅读、开发与 Linux 检查，长期工作台部署仍选本机或自有服务器；云端 Linux 环境不会自动具备 GX Works2 桌面软件、硬件网关和现场连接。
+有云端功能的账号可自行接入本公开仓库并创建环境。云端用于代码阅读、开发与 Linux 检查，长期工作台部署仍选本机或自有服务器；云端 Linux 环境不会自动具备 GX Works2 桌面软件、硬件网关和现场连接。
 
 网络可用且 Python 3.13、Node.js 满足版本要求时，可在环境设置阶段执行：
 

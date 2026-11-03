@@ -1,0 +1,2 @@
+# Preserve Windows launcher CRLF bytes, including in downloaded source archives.
+/*.cmd -text whitespace=cr-at-eol

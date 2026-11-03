@@ -60,12 +60,20 @@ try {
   const snap = await request(`/api/cim/projects/${p.id}/workflow`);
   const task = requirements[0];
   await check("seven readable stages and all current parallel waiting tasks", async () => {
+    assert.equal(await page.locator(".wf-canvas").count(), 0);
+    assert.equal(await page.locator(".wf-stage-strip li").count(), 7);
+    await page.getByRole("button", { name: "展开地图", exact: true }).click();
     assert.equal(await page.locator(".wf-stage").count(), 7);
     assert.equal(await page.locator(".wf-todos button").count(), 2);
     assert.match(await page.locator(".wf-summary").innerText(), /载入任务回传/);
     const scale = await page.locator(".react-flow__viewport").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).a);
     assert.ok(scale >= 0.7, "Default canvas keeps text readable");
     assert.ok(snap.nodes.find(n => n.id === "task:" + task.id).ready);
+    const nodeWidth = await page.locator(".wf-stage").first().evaluate(el => parseFloat(getComputedStyle(el).width));
+    await page.getByRole("button", { name: "放大字号", exact: true }).click();
+    const largerNode = await page.locator(".wf-stage").first().evaluate(el => parseFloat(getComputedStyle(el).width));
+    assert.ok(Math.abs(largerNode / nodeWidth - 1.1) < 0.01, "Diagram nodes adapt to larger text");
+    await page.getByRole("button", { name: "恢复默认字号", exact: true }).click();
   });
   await check("expand, keyboard selection, task dependencies and exact form navigation", async () => {
     await page.getByRole("button", { name: "展开需求澄清", exact: true }).click();

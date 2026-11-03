@@ -29,6 +29,28 @@ try {
   page.on("pageerror", e => browserErrors.push(String(e)));
   await page.goto((await readFile(resolve(workspace, ".local/login-url.txt"), "utf8")).trim());
   await page.getByRole("button", { name: "＋ 新建项目" }).waitFor();
+  await check("font controls resize text, persist, reset and reflow on narrow screens", async () => {
+    const reset = () => page.getByRole("button", { name: "恢复默认字号", exact: true }).click();
+    await reset();
+    const base = await page.locator(".fc-top h1").evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+    await page.getByRole("button", { name: "放大字号", exact: true }).click();
+    assert.equal(await page.getByLabel("当前字号", { exact: true }).innerText(), "110%");
+    const larger = await page.locator(".fc-top h1").evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+    assert.ok(Math.abs(larger / base - 1.1) < 0.01, "Text really scales");
+    await page.getByRole("button", { name: "放大字号", exact: true }).click();
+    await page.getByRole("button", { name: "放大字号", exact: true }).click();
+    assert.ok(await page.getByRole("button", { name: "放大字号", exact: true }).isDisabled());
+    await page.reload();
+    await page.getByLabel("当前字号", { exact: true }).filter({ hasText: "130%" }).waitFor();
+    await page.setViewportSize({ width: 320, height: 900 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+    await page.screenshot({ path: resolve(app, ".qa/screenshots/font-size-130-mobile.png"), fullPage: true });
+    await reset();
+    await page.getByRole("button", { name: "缩小字号", exact: true }).click();
+    assert.ok(await page.getByRole("button", { name: "缩小字号", exact: true }).isDisabled());
+    await reset();
+    await page.setViewportSize({ width: 1440, height: 1050 });
+  });
   const name = `浏览器验收-${Date.now()}`;
   await check("create and retain the selected business project", async () => {
     await page.getByRole("button", { name: "＋ 新建项目" }).click();
@@ -54,6 +76,15 @@ try {
     await page.getByRole("button", { name: "确认当前需求", exact: true }).click();
     await page.getByRole("button", { name: "生成本项目专家任务", exact: true }).click();
     await page.getByRole("button", { name: "专家任务", exact: true }).click();
+    await page.locator('.wf-map[aria-busy="false"]').waitFor();
+    assert.equal(await page.locator(".wf-canvas").count(), 0, "Map starts collapsed");
+    assert.equal(await page.locator(".wf-stage-strip li").count(), 7);
+    await page.locator(".fc-task-waiting>summary").click();
+    const blocked = page.getByRole("region", { name: "等待前置或状态更新", exact: true });
+    await blocked.getByRole("button", { name: "创建执行批次", exact: true }).first().waitFor();
+    assert.ok(await blocked.getByRole("button", { name: "创建执行批次", exact: true }).count() > 0);
+    assert.ok(await blocked.getByRole("button", { name: "创建执行批次", exact: true }).first().isDisabled());
+    await page.locator(".fc-task-waiting>summary").click();
     await page.getByRole("button", { name: "创建执行批次", exact: true }).first().click();
     await page.getByRole("link", { name: "下载任务包", exact: true }).first().waitFor();
     const download = page.waitForEvent("download");
@@ -62,13 +93,37 @@ try {
     const template = JSON.parse(await page.getByLabel("任务回传 JSON", { exact: true }).inputValue());
     template.summary = "仅为离线浏览器验收，已记录缺项；没有实际编译或现场操作。";
     template.verdict = "candidate";
+    await page.locator(".fc-return-editor>summary").click();
+    await page.getByLabel("任务回传 JSON", { exact: true }).fill("{invalid");
+    await page.getByRole("alert").filter({ hasText: "不是有效的 JSON 对象" }).waitFor();
+    assert.ok(await page.getByRole("button", { name: "提交回传", exact: true }).isDisabled());
+    await page.getByLabel("任务回传 JSON", { exact: true }).fill(JSON.stringify({ ...template, input_revision: 999 }));
+    await page.getByRole("alert").filter({ hasText: "不匹配" }).waitFor();
+    assert.ok(await page.getByRole("button", { name: "提交回传", exact: true }).isDisabled());
     await page.getByLabel("任务回传 JSON", { exact: true }).fill(JSON.stringify(template));
+    await page.getByLabel("回传摘要", { exact: true }).getByText(template.summary, { exact: true }).waitFor();
     await page.getByRole("button", { name: "提交回传", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "回传已保存；尚未人工审查" }).waitFor();
     await page.getByLabel("审查人", { exact: true }).fill("浏览器审查夹具");
     await page.getByLabel("审查意见", { exact: true }).fill("仅验收任务流转，非现场技术接受。");
     await page.getByRole("button", { name: "审查通过", exact: true }).click();
-    await page.locator(".fc-badge.approved").first().waitFor();
+    await page.locator(".fc-task-detail .fc-badge.approved").waitFor();
+    assert.ok(await page.getByRole("button", { name: "提交回传", exact: true }).isDisabled());
+    await page.locator(".fc-task-list .fc-task-select").first().click();
+    const ended = page.locator(".fc-task-list details").filter({ hasText: "已审查 / 已取消" });
+    await ended.locator(":scope > summary").click();
+    await ended.locator(".fc-task-select").click();
+    await page.getByLabel("回传摘要", { exact: true }).getByText(template.summary, { exact: true }).waitFor();
+    await ended.locator(":scope > summary").click();
+    await page.locator(".fc-return-editor>summary").click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: resolve(app, ".qa/screenshots/ui-task-workspace.png"), fullPage: true });
+    for (const width of [1024, 390, 320]) {
+      await page.setViewportSize({ width, height: 1050 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+    }
+    await page.screenshot({ path: resolve(app, ".qa/screenshots/ui-task-mobile.png"), fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1050 });
   });
   await check("browse actual agent and skill catalogs and preserve native workbench", async () => {
     await page.getByRole("button", { name: /专家目录/ }).click();
@@ -94,6 +149,9 @@ try {
     await page.getByText("BOM 价格未知: SENSOR-QA", { exact: true }).waitFor();
     await page.screenshot({ path: resolve(app, ".qa/screenshots/business.png"), fullPage: true });
     await page.getByRole("button", { name: "验证与归档", exact: true }).click();
+    assert.equal(await page.locator(".fc-evidence-row").count(), 5);
+    await page.getByRole("button", { name: "查看 / 登记现场验证", exact: true }).click();
+    assert.equal(await page.getByLabel("验证阶段", { exact: true }).inputValue(), "field");
     await page.getByLabel("项目结局", { exact: true }).selectOption("not_implemented");
     await page.getByLabel("归档责任人", { exact: true }).fill("浏览器测试执行人");
     await page.getByLabel("归档原因", { exact: true }).fill("离线表单验收，未实施真实工程改造。");

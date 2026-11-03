@@ -110,3 +110,14 @@ flowchart LR
 本机未安装 ST 语法扩展所需 C++ 编译器，当前未构建 `tree-sitter-iec61131-3-st`；该能力不会记为验证通过。Q26UDV 历史 CSV 已测试，R/GX Works3 仍是适配调查角色。没有执行在线 PLC 写入、真实 GX 编译或现场验收。
 
 详见 [运行与接口](docs/运行与接口.md)、[TT 数据契约](docs/TT数据与口径.md)、[验收报告](docs/验收报告.md) 及 [上游与参考](docs/上游与参考.md)。
+
+
+## 开源与许可
+
+本项目公开源码，采用 [Apache License 2.0](LICENSE)。上游 gxworks-agent 的原作者署名、版权与第三方许可继续保留，见 [NOTICE](NOTICE)、[上游许可范围](app/LICENSE-SCOPE.md) 和 [第三方声明](app/THIRD_PARTY_NOTICES.md)。
+
+公开仓库：https://github.com/LINQimingyu/PLC_Workflow-v2.0
+
+仓库仅提供源码与随源码发布的说明、配置和方法。业务 workspace、原始案例、备份、API Key、登录链接及运行日志不随源码发布。
+
+Windows 用户可双击根目录的 **打开PLC工作台.cmd** 启动并自动打开浏览器。工作台顶部的 **A− / 百分比 / A＋** 可在 90%–130% 间调整字号，点击百分比恢复默认，设置保存在本机浏览器。

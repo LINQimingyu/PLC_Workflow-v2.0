@@ -12,7 +12,7 @@ cd PLC_Workflow-v2.0
 docker compose up --build --detach --wait
 ```
 
-私有仓库需先完成 GitHub 登录。构建在 Node 阶段编译并测试前端，再将静态文件复制进 Python 3.13 镜像；运行进程使用 UID/GID `10001:10001`。Windows 专用依赖不进入 Linux 依赖锁。
+公开仓库可直接克隆；推送代码或访问受限功能时需完成 GitHub 登录。构建在 Node 阶段编译并测试前端，再将静态文件复制进 Python 3.13 镜像；运行进程使用 UID/GID `10001:10001`。Windows 专用依赖不进入 Linux 依赖锁。
 
 首次运行是空工作空间，不自动导入本机历史案例、备份或登录凭证。启动成功后，在自己的终端读取私有登录链接并粘贴到浏览器：
 

@@ -35,21 +35,23 @@ async function read<T>(path: string, signal?: AbortSignal): Promise<T> {
   return result as T;
 }
 
-export default function WorkflowMap({ projectId, refreshKey, onNavigate, onSnapshot }: {
+export default function WorkflowMap({ projectId, refreshKey, onNavigate, onSnapshot, fontScale = 1 }: {
   projectId: string; refreshKey: unknown; onNavigate: (target: WorkflowAction) => void;
   onSnapshot: (snapshot: WorkflowSnapshot | null) => void;
+  fontScale?: number;
 }) {
   const [snapshot, setSnapshot] = useState<WorkflowSnapshot | null>(null);
   const [history, setHistory] = useState<WorkflowHistory>({ events: [], next_before_seq: null });
   const [historyError, setHistoryError] = useState(""), [error, setError] = useState("");
   const [loading, setLoading] = useState(true), [moreLoading, setMoreLoading] = useState(false);
-  const [collapsed, setCollapsed] = useState(localStorage.getItem(`workflow-collapsed:${projectId}`) === "true");
+  const [collapsed, setCollapsed] = useState(localStorage.getItem(`workflow-collapsed-v2:${projectId}`) !== "false");
   const [fullscreen, setFullscreen] = useState(false);
   const [expanded, setExpanded] = useState<Set<StageId>>(new Set());
   const [selected, setSelected] = useState(localStorage.getItem(`workflow-selected:${projectId}`) || "");
   const [instance, setInstance] = useState<ReactFlowInstance<FlowNode> | null>(null);
   const controller = useRef<AbortController | null>(null), historyController = useRef<AbortController | null>(null);
   const generation = useRef(0), fitted = useRef(false);
+  useEffect(() => { fitted.current = false; }, [fontScale]);
 
   const refresh = useCallback(async () => {
     controller.current?.abort();
@@ -84,7 +86,7 @@ export default function WorkflowMap({ projectId, refreshKey, onNavigate, onSnaps
     }
   }, [snapshot, selected]);
   useEffect(() => { if (selected) localStorage.setItem(`workflow-selected:${projectId}`, selected); }, [projectId, selected]);
-  useEffect(() => { localStorage.setItem(`workflow-collapsed:${projectId}`, String(collapsed)); }, [projectId, collapsed]);
+  useEffect(() => { localStorage.setItem(`workflow-collapsed-v2:${projectId}`, String(collapsed)); }, [projectId, collapsed]);
   useEffect(() => {
     if (!fullscreen) return;
     const previous = document.body.style.overflow; document.body.style.overflow = "hidden";
@@ -95,10 +97,14 @@ export default function WorkflowMap({ projectId, refreshKey, onNavigate, onSnaps
   }, [fullscreen, instance]);
   useEffect(() => {
     if (!instance || !snapshot || fitted.current || collapsed) return;
-    const column = snapshot.nodes.filter(n => n.kind === "stage").findIndex(n => n.stage === snapshot.current_stage);
-    const frame = requestAnimationFrame(() => { void instance.setCenter(column * 268 + 112, 100, { zoom: 0.85 }); fitted.current = true; });
+    const target = snapshot.nodes.find(n => n.id === selected);
+    const stage = target?.stage || snapshot.current_stage;
+    const column = snapshot.nodes.filter(n => n.kind === "stage").findIndex(n => n.stage === stage);
+    const row = snapshot.nodes.filter(n => n.stage === stage && n.kind !== "stage").findIndex(n => n.id === selected);
+    const y = target && target.kind !== "stage" ? 239 + Math.max(0, row) * 145 : 100;
+    const frame = requestAnimationFrame(() => { void instance.setCenter((column * 268 + 112) * fontScale, y * fontScale, { zoom: 0.85 }); fitted.current = true; });
     return () => cancelAnimationFrame(frame);
-  }, [instance, snapshot, collapsed]);
+  }, [instance, snapshot, collapsed, selected, fontScale]);
 
   const toggle = useCallback((stage: StageId) => {
     setSelected(`stage:${stage}`);
@@ -108,24 +114,24 @@ export default function WorkflowMap({ projectId, refreshKey, onNavigate, onSnaps
   }, []);
   const graph = useMemo(() => snapshot ? workflowGraph(snapshot, expanded, selected) : null, [snapshot, expanded, selected]);
   const nodes: FlowNode[] = useMemo(() => graph?.visible.map(item => ({
-    id: item.id, type: "workflow", position: graph.positions.get(item.id)!,
+    id: item.id, type: "workflow", position: { x: graph.positions.get(item.id)!.x * fontScale, y: graph.positions.get(item.id)!.y * fontScale },
     data: { item, current: item.kind === "stage" && item.stage === snapshot?.current_stage, expanded: expanded.has(item.stage), onToggle: toggle },
-    selected: item.id === selected, width: 224, height: item.kind === "stage" ? 132 : 118,
+    selected: item.id === selected, width: 224 * fontScale, height: (item.kind === "stage" ? 132 : 118) * fontScale,
     ariaLabel: `${item.label}，${workflowStatus[item.status] || item.status}${item.kind === "stage" && item.stage === snapshot?.current_stage ? "，当前位置" : ""}`,
-  })) || [], [graph, snapshot, selected, expanded, toggle]);
+  })) || [], [graph, snapshot, selected, expanded, toggle, fontScale]);
   const edges = useMemo(() => graph?.edges.map(edge => ({ ...edge,
     type: "smoothstep", className: `wf-edge-${edge.kind}`,
     style: { stroke: edge.kind === "route" ? "#a8b6c0" : "#168779", strokeWidth: edge.kind === "route" ? 1.5 : 2, strokeDasharray: edge.kind === "route" ? "6 5" : undefined },
-    label: edge.kind === "route" ? "建议路线" : "前置依赖", labelStyle: { fontSize: 10, fill: "#527080" },
+    label: edge.kind === "route" ? "建议路线" : "前置依赖", labelStyle: { fontSize: 10 * fontScale, fill: "#527080" },
     markerEnd: { type: "arrowclosed" as const, color: edge.kind === "route" ? "#a8b6c0" : "#168779" },
-  })) || [], [graph]);
+  })) || [], [graph, fontScale]);
   const chosen = snapshot?.nodes.find(n => n.id === selected) || snapshot?.nodes.find(n => n.id === `stage:${snapshot.current_stage}`);
   const select = (id: string) => {
     const n = snapshot?.nodes.find(n => n.id === id); if (!n) return;
     setSelected(id); if (n.kind !== "stage") setExpanded(prev => new Set([...prev, n.stage]));
     const x = (snapshot?.nodes.filter(n => n.kind === "stage").findIndex(s => s.stage === n.stage) || 0) * 268 + 112;
     const row = snapshot?.nodes.filter(child => child.stage === n.stage && child.kind !== "stage").findIndex(child => child.id === n.id) || 0;
-    void instance?.setCenter(x, n.kind === "stage" ? 65 : 239 + row * 145, { zoom: 0.85, duration: 250 });
+    void instance?.setCenter(x * fontScale, (n.kind === "stage" ? 65 : 239 + row * 145) * fontScale, { zoom: 0.85, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 250 });
   };
   const more = async () => {
     if (!history.next_before_seq || moreLoading) return;
@@ -153,13 +159,16 @@ export default function WorkflowMap({ projectId, refreshKey, onNavigate, onSnaps
     </div></div>
     {error && <div className="wf-error" role="alert">状态未刷新：{error}。{snapshot ? `当前仍显示 ${date(snapshot.generated_at)} 的快照。` : "请重试读取。"}</div>}
     {!snapshot ? <p className="wf-muted">{loading ? "正在读取项目流程与操作历史…" : "流程暂不可用，现有业务页面仍可使用。"}</p> : <>
+      <ol className="wf-stage-strip" aria-label="项目阶段摘要">{snapshot.nodes.filter(n => n.kind === "stage").map((stage, index) => <li key={stage.id} className={`${stage.stage === snapshot.current_stage ? "current" : ""} wf-${stage.status}`}>
+        <button type="button" aria-current={stage.stage === snapshot.current_stage ? "step" : undefined} onClick={() => { setCollapsed(false); select(stage.id); }}><span>{String(index + 1).padStart(2, "0")} {stage.label}</span><small>{workflowStatus[stage.status] || stage.status}</small></button>
+      </li>)}</ol>
       <div className="wf-summary"><div><span>最近完成</span><strong>{snapshot.recent_completed?.label || "尚无完成记录"}</strong><small>{snapshot.recent_completed ? `${date(snapshot.recent_completed.at)} · ${snapshot.recent_completed.revision == null ? "版本未记录" : `r${snapshot.recent_completed.revision}`}` : "从需求与资料核对开始"}</small></div>
         <div><span>当前待办 · {snapshot.nodes.find(n => n.id === `stage:${snapshot.current_stage}`)?.label}</span><strong>{snapshot.outcome ? outcomeNames[snapshot.outcome.outcome] : `${snapshot.todo.length} 项待处理`}</strong><small>{snapshot.blockers[0] || (snapshot.outcome ? effectNames[snapshot.outcome.effect_status || ""] || snapshot.outcome.reason : "点击节点查看责任、输入与完成条件")}</small></div>
         <div className="wf-recommend"><span>推荐下一步</span><button disabled={!!error || loading} onClick={() => onNavigate(snapshot.recommended)}>{snapshot.recommended.label} ↗</button><small>进入现有页面处理并保存</small></div></div>
       {!collapsed && <>
-        <div className="wf-legend"><span><i className="wf-line-dashed" />建议路线</span><span><i className="wf-line-solid" />任务前置依赖</span><span>✓ 已完成</span><span>○ 待处理 / 等待</span><span>! 需处理</span><button className="wf-text-button" onClick={() => select(`stage:${snapshot.current_stage}`)}>定位当前节点</button><button className="wf-text-button" onClick={() => void instance?.fitView({ padding: 0.12, maxZoom: 0.9, duration: 250 })}>适应全图</button></div>
+        <div className="wf-legend"><span><i className="wf-line-dashed" />建议路线</span><span><i className="wf-line-solid" />任务前置依赖</span><span>✓ 已完成</span><span>○ 待处理 / 等待</span><span>! 需处理</span><button className="wf-text-button" onClick={() => select(`stage:${snapshot.current_stage}`)}>定位当前节点</button><button className="wf-text-button" onClick={() => void instance?.fitView({ padding: 0.12, maxZoom: 0.9, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 250 })}>适应全图</button></div>
         <div className="wf-workspace"><div className="wf-canvas" aria-label="可缩放流程画布">
-          <ReactFlow<FlowNode> nodes={nodes} edges={edges} nodeTypes={nodeTypes} onInit={setInstance}
+          <ReactFlow<FlowNode> nodes={nodes} edges={edges} nodeTypes={nodeTypes} onInit={flow => { fitted.current = false; setInstance(flow); }}
             onNodeClick={(_e, n) => setSelected(n.id)} onKeyDown={e => {
               if (e.target instanceof HTMLButtonElement) return;
               const id = (e.target as HTMLElement).closest<HTMLElement>(".react-flow__node")?.dataset.id;
