@@ -56,6 +56,11 @@ def main():
     for _ in range(120):
         try:
             if json.loads(request("/api/health"))["status"] == "ok":
+                ready = subprocess.run(["docker", "compose", "exec", "-T", "workbench", "test", "-s", "/data/.local/login-url.txt"],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if ready.returncode != 0:
+                    time.sleep(.5)
+                    continue
                 break
         except (OSError, AssertionError):
             pass

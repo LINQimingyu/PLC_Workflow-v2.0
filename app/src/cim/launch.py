@@ -30,6 +30,8 @@ def main():
 
 
 def run_server(args,root,local):
+    # A previous process's login link must never appear ready for a new token.
+    (local/"login-url.txt").unlink(missing_ok=True)
     os.environ["PLC_AI_DATA_DIR"]=str(local/"gxworks-settings")
     os.environ["HAYSTACK_TELEMETRY_ENABLED"]="false"
     os.environ["DO_NOT_TRACK"]="1"
@@ -51,10 +53,12 @@ def run_server(args,root,local):
         while not stopped.wait(.1):
             if server.started:
                 login_file=local/"login-url.txt"
-                fd=os.open(login_file,os.O_WRONLY|os.O_CREAT|os.O_TRUNC,0o600)
+                login_temp=local/"login-url.tmp"
+                fd=os.open(login_temp,os.O_WRONLY|os.O_CREAT|os.O_TRUNC,0o600)
                 with os.fdopen(fd,"w",encoding="utf-8") as stream:
                     stream.write(url)
-                login_file.chmod(0o600)
+                login_temp.chmod(0o600)
+                login_temp.replace(login_file)
                 (local/"server.pid").write_text(str(os.getpid()),encoding="ascii")
                 if args.open_browser:
                     webbrowser.open(url)
