@@ -6,6 +6,7 @@ export interface PlannerSettings {
   destination: "external" | "internal";
   internal_confirmed: boolean;
   has_key: boolean;
+  key_read_only?: boolean;
   agent: CreationAgentDefinition;
 }
 export interface CreationFields { name: string; scenario: string; area: string; cpu: string; equipment: string; requirements: string; classification: string }

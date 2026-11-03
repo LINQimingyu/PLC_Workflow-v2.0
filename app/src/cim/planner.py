@@ -5,6 +5,7 @@ Keys stay in Credential Manager; completed call IDs are never silently re-issued
 """
 from __future__ import annotations
 import json
+import os
 import re
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -43,7 +44,14 @@ class ProjectPlanner:
         self.service=service
         self.run_id=uid()
         self.transport=transport or self._complete
-        self.secrets=secrets or WindowsSecrets()
+        if secrets is not None:
+            self.secrets=secrets
+        elif os.environ.get("PLC_WORKFLOW_PLANNER_KEY_FILE"):
+            from .mounted_secret import MountedPlannerSecret
+            endpoint=os.environ.get("PLC_WORKFLOW_PLANNER_KEY_BASE_URL",DEFAULT_SETTINGS["base_url"]).strip().rstrip("/")
+            self.secrets=MountedPlannerSecret(os.environ["PLC_WORKFLOW_PLANNER_KEY_FILE"],self._target({"base_url":endpoint}))
+        else:
+            self.secrets=WindowsSecrets()
         self.definition=json.loads((Path(__file__).resolve().parents[2]/"creation-agent.json").read_text(encoding="utf-8"))
 
     def _settings(self):
@@ -62,7 +70,7 @@ class ProjectPlanner:
             has_key=bool(self.secrets.read(self._target(settings)))
         except (OSError,AttributeError):
             has_key=False
-        return {**settings,"has_key":has_key,"agent":self.definition}
+        return {**settings,"has_key":has_key,"key_read_only":getattr(self.secrets,"read_only",False),"agent":self.definition}
 
     def save_settings(self,values):
         allowed=set(DEFAULT_SETTINGS)|{"api_key","clear_key"}
@@ -98,6 +106,8 @@ class ProjectPlanner:
             raise PlannerError("API Key 格式无效")
         if values.get("clear_key") and key.strip():
             raise PlannerError("不能同时写入和清除 API Key")
+        if getattr(self.secrets,"read_only",False) and (key.strip() or values.get("clear_key")):
+            raise PlannerError("API Key 由部署密钥文件只读提供，请在宿主机更新该文件并重新创建容器；配置未更新")
         with self.service.connect(True) as db:
             try:
                 if key.strip():

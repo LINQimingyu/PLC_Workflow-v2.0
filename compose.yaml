@@ -1,0 +1,31 @@
+name: plc-workflow-v2
+services:
+  workbench:
+    image: plc-workflow-v2:local
+    build:
+      context: .
+      target: production
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PLC_WORKFLOW_PORT:-8772}:8772"
+    environment:
+      PLC_WORKFLOW_PORT: "${PLC_WORKFLOW_PORT:-8772}"
+      PLC_WORKFLOW_PLANNER_KEY_FILE: /run/secrets/planner_api_key
+      PLC_WORKFLOW_PLANNER_KEY_BASE_URL: "${PLC_WORKFLOW_PLANNER_KEY_BASE_URL:-https://api.deepseek.com}"
+    command: ["--host", "0.0.0.0", "--port", "8772", "--browser-port", "${PLC_WORKFLOW_PORT:-8772}", "--workspace", "/data"]
+    volumes:
+      - workspace:/data
+    secrets:
+      - planner_api_key
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,size=128m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 30s
+secrets:
+  planner_api_key:
+    file: "${PLC_WORKFLOW_PLANNER_KEY_PATH:-./deploy/planner-api-key.empty}"
+volumes:
+  workspace:

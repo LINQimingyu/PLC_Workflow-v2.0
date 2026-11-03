@@ -6,6 +6,8 @@ node_modules/
 /数据备份/
 /案例分析/
 /.github-publish/
+/deploy/secrets/
+/backup*/
 # Credentials and runtime files
 .env
 .env.*

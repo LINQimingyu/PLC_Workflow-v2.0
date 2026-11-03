@@ -1,6 +1,6 @@
 # TFT-LCD 电气自动化工作台 v2.0
 
-> GitHub 源码交付：本仓库包含代码、项目内 Agent/Skill、许可和安装脚本。克隆后请先运行 `安装与构建.ps1`，再运行 `启动工作台.cmd`。运行数据、登录凭证、数据备份和历史案例原件不随源码上传；本机已安装、已导入样例等表述描述原开发环境，其他电脑首次安装为空工作空间。`-SeedExamples` 需要自行提供对应历史案例文件。此仓库用于源码托管，工作台在 Windows 本机运行。
+> GitHub 源码交付：运行数据、登录凭证、数据备份和历史案例原件不随源码上传；克隆后首次安装为空工作空间。本机已安装、已导入样例等表述描述原开发环境，`-SeedExamples` 需要自行提供对应历史案例。
 
 已实现可运行的首版：**gxworks-agent 工程底座 + 34 个专家定义 + 41 个项目内 Skill + 厂内任务包 + 私有检索 + FDC / TT 工具 + 投入收益与归档**。
 
@@ -8,13 +8,26 @@
 
 ## 启动与第一次使用
 
+### Docker / Compose
+
+安装 Docker 与 Compose v2 后，在仓库根目录运行：
+
+```sh
+docker compose up --build --detach --wait
+docker compose exec -T workbench cat /data/.local/login-url.txt
+```
+
+在浏览器打开第二条命令显示的私有登录链接。默认仅本机访问，数据持久化到命名卷；宿主机不需要安装 Python 或 Node.js。API Key 通过只读密钥文件提供，详见 [Docker 部署](docs/Docker部署.md)，含端口、密钥、备份、远程 SSH 访问与平台能力说明。
+
+### Windows 直接启动
+
 当前环境已安装、构建，并导入两个样例。双击 **`启动工作台.cmd`**，或者运行：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\启动工作台.ps1"
 ```
 
-地址为 `http://127.0.0.1:8772/#cim`。启动器使用私有登录链接自动登录；凭证保存在 `workspace/.local/login-url.txt`，不要分享或提交该文件。没有 Docker 依赖。
+地址为 `http://127.0.0.1:8772/#cim`。启动器使用私有登录链接自动登录；凭证保存在 `workspace/.local/login-url.txt`，不要分享或提交该文件。Windows 直接启动方式没有 Docker 依赖。
 
 项目标题下方的 **项目流程地图** 显示当前阶段、全部待办、推荐下一步和操作轨迹。可平移缩放、展开专家任务，点击节点查看输入、成果、阻塞原因并跳转现有表单；使用方法见 [流程导航](docs/流程导航.md)。
 
